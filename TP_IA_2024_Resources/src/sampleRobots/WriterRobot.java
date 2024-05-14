@@ -8,20 +8,28 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
 
-public class LoggerRobot extends AdvancedRobot {
+public class WriterRobot extends AdvancedRobot {
 
+    /**
+     * Classe usada para guardar os dados dos robots inimigos, quando observados
+     */
     private class Dados{
-        String nome;
-        Double distancia;
+        String nome; //nome do robot inimigo
+        Double distancia; //distancia a que o robot se encontra
+        Double velocidade; //velocidade a que o robot inimigo se desloca
 
-        public Dados(String nome, Double distancia) {
+        public Dados(String nome, Double distancia, Double velocidade) {
             this.nome = nome;
             this.distancia = distancia;
+            this.velocidade = velocidade;
         }
     }
 
+    //objeto para escrever em ficheiro
     RobocodeFileOutputStream fw;
 
+    //estrutura para manter a informação das balas enquanto não atingem um alvo, a parede ou outra bala
+    //isto porque enquanto a bala não desaparece, não sabemos se atingiu o alvo ou não
     HashMap<Bullet, Dados> balasNoAr = new HashMap<>();
 
     @Override
@@ -56,7 +64,8 @@ public class LoggerRobot extends AdvancedRobot {
 
         if (b!=null){
             System.out.println("Firing at "+event.getName());
-            balasNoAr.put(b, new Dados(event.getName(), event.getDistance()));
+            //guardar os dados do inimigo temporariamente, até que a bala chegue ao destino, para depois os escrever em ficheiro
+            balasNoAr.put(b, new Dados(event.getName(), event.getDistance(), event.getVelocity()));
         }
         else
             System.out.println("Cannot fire right now..."); 
@@ -71,9 +80,9 @@ public class LoggerRobot extends AdvancedRobot {
         {
             //testar se acertei em quem era suposto
             if (event.getName().equals(event.getBullet().getVictim()))
-                fw.write((d.nome+","+d.distancia+",hit\n").getBytes());
+                fw.write((d.nome+","+d.distancia+","+d.velocidade+",hit\n").getBytes());
             else
-                fw.write((d.nome+","+d.distancia+",no_hit\n").getBytes());
+                fw.write((d.nome+","+d.distancia+","+d.velocidade+",no_hit\n").getBytes());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -86,7 +95,7 @@ public class LoggerRobot extends AdvancedRobot {
         super.onBulletMissed(event);
         Dados d = balasNoAr.get(event.getBullet());
         try {
-            fw.write((d.nome+","+d.distancia+",no_hit\n").getBytes());
+            fw.write((d.nome+","+d.distancia+","+d.velocidade+",no_hit\n").getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -98,7 +107,7 @@ public class LoggerRobot extends AdvancedRobot {
         super.onBulletHitBullet(event);
         Dados d = balasNoAr.get(event.getBullet());
         try {
-            fw.write((d.nome+","+d.distancia+",no_hit\n").getBytes());
+            fw.write((d.nome+","+d.distancia+","+d.velocidade+",no_hit\n").getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
