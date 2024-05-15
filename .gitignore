@@ -29,3 +29,5 @@ replay_pid*
 # IntelliJ
 .idea/
 IA2324SlaughterSquad.iml
+
+SlaughterSquad/target/maven-status/

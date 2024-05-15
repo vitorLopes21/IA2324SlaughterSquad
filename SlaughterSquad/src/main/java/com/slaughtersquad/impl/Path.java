@@ -1,8 +1,8 @@
-package impl;
+package com.slaughtersquad.impl;
 
 
-import interf.IPath;
-import interf.IPoint;
+import com.slaughtersquad.interf.IPath;
+import com.slaughtersquad.interf.IPoint;
 
 import java.util.List;
 

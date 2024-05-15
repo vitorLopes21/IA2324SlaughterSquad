@@ -1,4 +1,4 @@
-package sampleRobots;
+package com.slaughtersquad.sampleRobots;
 
 import robocode.*;
 
@@ -10,6 +10,8 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
+
+import com.slaughtersquad.utils.*;
 
 /**
  * This Robot uses the model provided to guess whether it will hit or miss an enemy.
@@ -52,7 +54,7 @@ public class IntelligentRobot extends AdvancedRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
 
-        Point2D.Double coordinates = utils.Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
+        Point2D.Double coordinates = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
         System.out.println("Enemy "+event.getName()+" spotted at "+coordinates.x+","+coordinates.y+"\n");
 
         RowData row = new RowData();

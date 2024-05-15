@@ -21,14 +21,14 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/src/main/resources/robocode.jar</systemPath>
         </dependency>
+
         <dependency>
             <groupId>com.sample2</groupId>
             <artifactId>sample2</artifactId>
             <version>1.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/src/main/resources/h2o.jar</systemPath>
-        </dependency>
-        
+        </dependency> 
     </dependencies>
 
 </project>

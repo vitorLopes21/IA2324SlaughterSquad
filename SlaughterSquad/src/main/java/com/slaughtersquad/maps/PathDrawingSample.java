@@ -1,9 +1,9 @@
-package maps;
+package com.slaughtersquad.maps;
 
-import interf.IUIConfiguration;
-import viewer.PathViewer;
-import impl.Point;
-import interf.IPoint;
+import com.slaughtersquad.interf.IUIConfiguration;
+import com.slaughtersquad.viewer.PathViewer;
+import com.slaughtersquad.impl.Point;
+import com.slaughtersquad.interf.IPoint;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;

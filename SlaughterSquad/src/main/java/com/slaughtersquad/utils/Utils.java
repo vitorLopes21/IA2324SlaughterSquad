@@ -1,4 +1,4 @@
-package utils;
+package com.slaughtersquad.utils;
 
 import robocode.AdvancedRobot;
 import robocode.Robot;

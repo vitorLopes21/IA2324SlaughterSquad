@@ -1,8 +1,8 @@
-package sampleRobots;
+package com.slaughtersquad.sampleRobots;
 
-import impl.Point;
-import impl.UIConfiguration;
-import interf.IPoint;
+import com.slaughtersquad.impl.Point;
+import com.slaughtersquad.impl.UIConfiguration;
+import com.slaughtersquad.interf.IPoint;
 import robocode.Robot;
 import robocode.*;
 
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
-import utils.Utils;
+import com.slaughtersquad.utils.Utils;
 
 public class AdvancedWalkerRobot extends AdvancedRobot
 {

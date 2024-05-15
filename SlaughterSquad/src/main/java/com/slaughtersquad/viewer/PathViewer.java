@@ -1,13 +1,13 @@
-package viewer;
+package com.slaughtersquad.viewer;
 
-import interf.IPoint;
+import com.slaughtersquad.interf.IPoint;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
-import interf.IUIConfiguration;
+import com.slaughtersquad.interf.IUIConfiguration;
 
 
 /**

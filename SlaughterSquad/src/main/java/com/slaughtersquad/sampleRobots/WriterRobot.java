@@ -1,50 +1,123 @@
-package sampleRobots;
+package com.slaughtersquad.sampleRobots;
 
 import robocode.*;
 
 import java.awt.geom.*;
 import java.awt.*;
 import java.io.IOException;
-import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Random;
+import com.slaughtersquad.utils.*;
 
 public class WriterRobot extends AdvancedRobot {
 
-    /**
-     * Classe usada para guardar os dados dos robots inimigos, quando observados
-     */
-    private class Dados {
-        String nome; // nome do robot inimigo
-        Double distancia; // distancia a que o robot se encontra
-        Double velocidade; // velocidade a que o robot inimigo se desloca
+    // Object used to write to the log_robocode.txt file
+    private volatile RobocodeFileOutputStream fw;
 
-        public Dados(String nome, Double distancia, Double velocidade) {
-            this.nome = nome;
-            this.distancia = distancia;
-            this.velocidade = velocidade;
+    // Structure to keep the information of the bullets
+    // while they don't hit a target, a wall or another bullet
+    // This is done since we don't know if the bullet hit the target or not until it
+    // disappears
+    HashMap<Bullet, Data> bulletsOnAir = new HashMap<>();
+
+    /**
+     * Helper class to store the data of the enemy robot
+     */
+    private class Data {
+        String name; // Name of the enemy robot
+        Double distance; // Distance between the enemy robot and the writer robot
+        Double velocity; // Velocity of the enemy robot
+
+        public Data(String name, Double distance, Double velocity) {
+            this.name = name;
+            this.distance = distance;
+            this.velocity = velocity;
         }
     }
 
-    // objeto para escrever em ficheiro
-    volatile RobocodeFileOutputStream fw;
+    /**
+     * Method that flushes and closes the file stream
+     */
+    private void closeFileStream() {
+        if (fw != null) {
+            try {
+                fw.flush();
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                fw = null; // Reset fw to null for the next round
+            }
+        }
+    }
 
-    // estrutura para manter a informação das balas enquanto não atingem um alvo, a
-    // parede ou outra bala
-    // isto porque enquanto a bala não desaparece, não sabemos se atingiu o alvo ou
-    // não
-    HashMap<Bullet, Dados> balasNoAr = new HashMap<>();
+    /**
+     * Method to write the data to the dataset.csv file
+     */
+    private void writeToCsvFile() {
+        try {
+            // Close the file stream
+            closeFileStream();
+
+            // Read the log_robocode.txt file
+            FileReader fr = new FileReader(getDataFile("log_robocode.txt").getCanonicalPath());
+            BufferedReader br = new BufferedReader(fr);
+
+            // Write the data to the dataset.csv file
+            RobocodeFileOutputStream pw = new RobocodeFileOutputStream(getDataFile("dataset.csv").getCanonicalPath(),
+                    true);
+
+            // Read the file line by line and store it in a string
+            String line;
+
+            // Read line by line and print it
+            while ((line = br.readLine()) != null) {
+                // Write each line to the dataset.csv file
+                pw.write((line + "\n").getBytes());
+            }
+
+            // Close the file
+            pw.flush();
+            pw.close();
+
+            // Empty the log file
+            fw = new RobocodeFileOutputStream(getDataFile("log_robocode.txt").getCanonicalPath(), false);
+            fw.write("".getBytes());
+
+            // Close the reader
+            br.close();
+            fr.close();
+
+            closeFileStream();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Executa o método main da classe Main
+     */
+    private void writeSignalBattleEnded() {
+        // Write a signal to a file to indicate the battle has ended
+        try (RobocodeFileOutputStream signalFile = new RobocodeFileOutputStream(
+                getDataFile("battle_finished_signal.txt"))) {
+            signalFile.write("".getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void run() {
         super.run();
 
         try {
-            // Get relative path to the log file and decode it so that it can be used on the
-            // this.getDataFile method
-            fw = new RobocodeFileOutputStream(this.getDataFile("log_robocode.txt").getCanonicalPath(), true);
+            if (fw == null) {
+                fw = new RobocodeFileOutputStream(this.getDataFile("log_robocode.txt").getCanonicalPath(), true);
+            }
+
             System.out.println("Writing to: " + fw.getName());
         } catch (IOException e) {
             e.printStackTrace();
@@ -64,7 +137,7 @@ public class WriterRobot extends AdvancedRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
 
-        Point2D.Double coordinates = utils.Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
+        Point2D.Double coordinates = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
         System.out.println("Enemy " + event.getName() + " spotted at " + coordinates.x + "," + coordinates.y + "\n");
         Bullet b = fireBullet(3);
 
@@ -72,7 +145,7 @@ public class WriterRobot extends AdvancedRobot {
             System.out.println("Firing at " + event.getName());
             // guardar os dados do inimigo temporariamente, até que a bala chegue ao
             // destino, para depois os escrever em ficheiro
-            balasNoAr.put(b, new Dados(event.getName(), event.getDistance(), event.getVelocity()));
+            bulletsOnAir.put(b, new Data(event.getName(), event.getDistance(), event.getVelocity()));
         } else
             System.out.println("Cannot fire right now...");
 
@@ -81,51 +154,51 @@ public class WriterRobot extends AdvancedRobot {
     @Override
     public void onBulletHit(BulletHitEvent event) {
         super.onBulletHit(event);
-        Dados d = balasNoAr.get(event.getBullet());
+        Data d = bulletsOnAir.get(event.getBullet());
         try {
             // testar se acertei em quem era suposto
             // testar se acertei em quem era suposto
             if (event.getName().equals(event.getBullet().getVictim())) {
                 if (fw != null) {
-                    fw.write((d.nome + "," + d.distancia + "," + d.velocidade + ",hit\n").getBytes());
+                    fw.write((d.name + "," + d.distance + "," + d.velocity + ",hit\n").getBytes());
                 }
             } else {
                 if (fw != null) {
-                    fw.write((d.nome + "," + d.distancia + "," + d.velocidade + ",no_hit\n").getBytes());
+                    fw.write((d.name + "," + d.distance + "," + d.velocity + ",no_hit\n").getBytes());
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        balasNoAr.remove(event.getBullet());
+        bulletsOnAir.remove(event.getBullet());
     }
 
     @Override
     public void onBulletMissed(BulletMissedEvent event) {
         super.onBulletMissed(event);
-        Dados d = balasNoAr.get(event.getBullet());
+        Data d = bulletsOnAir.get(event.getBullet());
         try {
             if (fw != null) {
-                fw.write((d.nome + "," + d.distancia + "," + d.velocidade + ",no_hit\n").getBytes());
+                fw.write((d.name + "," + d.distance + "," + d.velocity + ",no_hit\n").getBytes());
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        balasNoAr.remove(event.getBullet());
+        bulletsOnAir.remove(event.getBullet());
     }
 
     @Override
     public void onBulletHitBullet(BulletHitBulletEvent event) {
         super.onBulletHitBullet(event);
-        Dados d = balasNoAr.get(event.getBullet());
+        Data d = bulletsOnAir.get(event.getBullet());
         try {
             if (fw != null) {
-                fw.write((d.nome + "," + d.distancia + "," + d.velocidade + ",no_hit\n").getBytes());
+                fw.write((d.name + "," + d.distance + "," + d.velocity + ",no_hit\n").getBytes());
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        balasNoAr.remove(event.getBullet());
+        bulletsOnAir.remove(event.getBullet());
     }
 
     @Override
@@ -136,48 +209,16 @@ public class WriterRobot extends AdvancedRobot {
     @Override
     public void onRoundEnded(RoundEndedEvent event) {
         super.onRoundEnded(event);
+
+        closeFileStream();
     }
 
     @Override
     public void onBattleEnded(BattleEndedEvent event) {
         super.onBattleEnded(event);
 
-        try {
-            fw.flush();
-            fw.close();
+        writeToCsvFile();
 
-            FileReader fr = new FileReader(getDataFile("log_robocode.txt").getCanonicalPath());
-            BufferedReader br = new BufferedReader(fr);
-
-            RobocodeFileOutputStream pw = new RobocodeFileOutputStream(getDataFile("dataset.csv").getCanonicalPath(), true);
-
-            // Read the file line by line and store it in a string
-            String line;
-
-            // Read line by line and print it
-            while ((line = br.readLine()) != null) {
-                // Write each line to the dataset.csv file
-                pw.write((line + "\n").getBytes());
-            }
-
-            // Close the file
-            pw.flush();
-            pw.close();
-
-            // Empty the log file
-            fw = new RobocodeFileOutputStream(getDataFile("log_robocode.txt").getCanonicalPath(), false);
-            fw.write("".getBytes());
-
-            // Close the file and flush the buffer
-            fw.flush();
-            fw.close();
-
-            // Close the reader
-            br.close();
-            fr.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        writeSignalBattleEnded();
     }
-
 }

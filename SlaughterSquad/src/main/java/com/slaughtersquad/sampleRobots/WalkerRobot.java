@@ -1,14 +1,14 @@
-package sampleRobots;
+package com.slaughtersquad.sampleRobots;
 
 import robocode.*;
-import impl.Point;
-import impl.UIConfiguration;
+import com.slaughtersquad.impl.Point;
+import com.slaughtersquad.impl.UIConfiguration;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.List;
-import interf.IPoint;
+import com.slaughtersquad.interf.IPoint;
 import robocode.Robot;
 
 public class WalkerRobot extends AdvancedRobot
