@@ -5,7 +5,6 @@ import robocode.*;
 import java.awt.geom.*;
 import java.awt.*;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Random;
 import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
