@@ -1,7 +1,7 @@
-package impl;
+package com.slaughtersquad.impl;
 
 
-import interf.IPoint;
+import com.slaughtersquad.interf.IPoint;
 
 import java.awt.geom.Point2D;
 

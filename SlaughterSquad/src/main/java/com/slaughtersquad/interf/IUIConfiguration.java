@@ -1,4 +1,4 @@
-package interf;
+package com.slaughtersquad.interf;
 
 import java.awt.*;
 import java.util.List;

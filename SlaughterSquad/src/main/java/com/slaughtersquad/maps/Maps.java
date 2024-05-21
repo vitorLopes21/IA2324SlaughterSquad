@@ -1,8 +1,8 @@
-package maps;
+package com.slaughtersquad.maps;
 
-import interf.IUIConfiguration;
-import impl.UIConfiguration;
-import impl.Point;
+import com.slaughtersquad.interf.IUIConfiguration;
+import com.slaughtersquad.impl.UIConfiguration;
+import com.slaughtersquad.impl.Point;
 import java.awt.*;
 import java.util.*;
 import java.util.List;

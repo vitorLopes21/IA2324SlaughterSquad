@@ -1,17 +1,22 @@
-package sampleRobots;
+package com.slaughtersquad.sampleRobots;
 
+import com.slaughtersquad.impl.Point;
+import com.slaughtersquad.impl.UIConfiguration;
+import com.slaughtersquad.interf.IPoint;
+import robocode.Robot;
 import robocode.*;
-import impl.Point;
-import impl.UIConfiguration;
+
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import interf.IPoint;
-import robocode.Robot;
+import java.util.Random;
 
-public class WalkerRobot extends AdvancedRobot
+import com.slaughtersquad.utils.Utils;
+
+public class AdvancedWalkerRobot extends AdvancedRobot
 {
     /*
      * lista de obstáculos, preenchida ao fazer scan
@@ -20,6 +25,9 @@ public class WalkerRobot extends AdvancedRobot
     public static UIConfiguration conf;
     private List<IPoint> points;
     private HashMap<String, Rectangle> inimigos; //utilizada par associar inimigos a retângulos e permitir remover retângulos de inimigos já desatualizados
+
+    //variável que contém o ponto atual para o qual o robot se está a dirigir
+    private int currentPoint = -1;
 
     @Override
     public void run()
@@ -31,12 +39,24 @@ public class WalkerRobot extends AdvancedRobot
         conf = new UIConfiguration((int) getBattleFieldWidth(), (int) getBattleFieldHeight() , obstacles);
 
         while(true){
-            this.turnRadarRight(360);
+            this.setTurnRadarRight(360);
 
-            //this.ahead(100);
-            //this.turnLeft(100);
+            //se se está a dirigir para algum ponto
+            if (currentPoint >= 0)
+            {
+                IPoint ponto = points.get(currentPoint);
+                //se já está no ponto ou lá perto...
+                if (Utils.getDistance(this, ponto.getX(), ponto.getY()) < 2){
+                    currentPoint++;
+                    //se chegou ao fim do caminho
+                    if (currentPoint >= points.size())
+                        currentPoint = -1;
+                }
 
-            //this.execute();
+                advancedRobotGoTo(this, ponto.getX(), ponto.getY());
+            }
+
+            this.execute();
         }
     }
 
@@ -55,16 +75,13 @@ public class WalkerRobot extends AdvancedRobot
          * */
         System.out.println("Choo Choo!!!");
         points = new ArrayList<>();
-        System.out.println("Choo Choo!!!");
-        points = new ArrayList<>();
         points.add(new Point((int) this.getX(), (int) this.getY()));
         int size = rand.nextInt(5); //cria um caminho aleatório com no máximo 5 nós intermédios (excetuando início e fim)
         for (int i=0;i<size;i++)
             points.add(new Point(rand.nextInt(conf.getWidth()),rand.nextInt(conf.getHeight())));
         points.add(new Point(e.getX(), e.getY())); 
 
-        for (int i=0;i<points.size();i++)
-            robotGoTo(this, points.get(i).getX(), points.get(i).getY());
+        currentPoint = 0;
     }
 
     /**
@@ -131,28 +148,6 @@ public class WalkerRobot extends AdvancedRobot
         return new Point2D.Double((robot.getX() + Math.sin(angle) * distance), (robot.getY() + Math.cos(angle) * distance));
     }
 
-    /**
-     * Dirige o robot (RobotSimples) para determinadas coordenadas
-     *
-     * @param robot o meu robot
-     * @param x coordenada x do alvo
-     * @param y coordenada y do alvo
-     * */
-    public static void robotGoTo(Robot robot, double x, double y)
-    {
-        x -= robot.getX();
-        y -= robot.getY();
-
-        double angleToTarget = Math.atan2(x, y);
-        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
-        double distance = Math.hypot(x, y);
-        double turnAngle = Math.atan(Math.tan(targetAngle));
-        robot.turnRight(Math.toDegrees(turnAngle));
-        if (targetAngle == turnAngle)
-            robot.ahead(distance);
-        else
-            robot.back(distance);
-    }
 
     private void drawThickLine(Graphics g, int x1, int y1, int x2, int y2, int thickness, Color c) {
 
@@ -184,5 +179,30 @@ public class WalkerRobot extends AdvancedRobot
         yPoints[3] = y2 + dy;
 
         g.fillPolygon(xPoints, yPoints, 4);
+    }
+
+
+    /**
+     * Dirige o robot (AdvancedRobot) para determinadas coordenadas
+     *
+     * @param robot o meu robot
+     * @param x coordenada x do alvo
+     * @param y coordenada y do alvo
+     * */
+    public static void advancedRobotGoTo(AdvancedRobot robot, double x, double y)
+    {
+        x -= robot.getX();
+        y -= robot.getY();
+
+        double angleToTarget = Math.atan2(x, y);
+        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
+        double distance = Math.hypot(x, y);
+        double turnAngle = Math.atan(Math.tan(targetAngle));
+        robot.setTurnRight(Math.toDegrees(turnAngle));
+        if (targetAngle == turnAngle)
+            robot.setAhead(distance);
+        else
+            robot.setBack(distance);
+        robot.execute();
     }
 }
