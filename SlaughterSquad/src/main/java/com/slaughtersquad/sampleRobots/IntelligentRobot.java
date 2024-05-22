@@ -4,6 +4,7 @@ import robocode.*;
 
 import java.awt.geom.*;
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
@@ -15,6 +16,8 @@ import hex.genmodel.easy.prediction.*;
 import com.slaughtersquad.utils.*;
 import robocode.Robot;
 
+import static robocode.util.Utils.normalRelativeAngleDegrees;
+
 /**
  * This Robot uses the model provided to guess whether it will hit or miss an enemy.
  * This is a very basic model, trained specifically on the following enemies: Corners, Crazy, SittingDuck, Walls.
@@ -22,6 +25,7 @@ import robocode.Robot;
  */
 public class IntelligentRobot extends AdvancedRobot {
     private EnemyBot enemy;
+    private EasyPredictModelWrapper model;
 
     /**
      * Run the robot
@@ -29,14 +33,28 @@ public class IntelligentRobot extends AdvancedRobot {
     @Override
     public void run() {
         super.run();
+        File dir = getDataDirectory(); // Use Robocode's method to get the data directory
+        File[] files = dir.listFiles(); // List all files in the directory
 
-        //load the model
-        //EasyPredictModelWrapper model = null;
-        //try {
-        //    model = new EasyPredictModelWrapper(MojoModel.load("com/slaughtersquad/sampleRobots/IntelligentRobot_model.zip"));
-        //} catch (IOException e) {
-        //    e.printStackTrace();
-        //}
+        File dataFile = null;
+        assert files != null;
+        for (File file : files) {
+            if (file.getName().startsWith("DRF_model_python") && file.getName().endsWith(".zip")) {
+                dataFile = file; // Found a matching file
+                break;
+            }
+        }
+
+        if (dataFile != null) {
+            try {
+                model = new EasyPredictModelWrapper(MojoModel.load(dataFile.getAbsolutePath()));
+                System.out.println("Model loaded successfully");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("No matching model file found");
+        }
 
         // Allow the gun and radar to turn independently
         setAdjustRadarForRobotTurn(true);
@@ -46,8 +64,7 @@ public class IntelligentRobot extends AdvancedRobot {
 
         while (true) {
             turnRadarRight(360);
-            setAhead(100);
-            setTurnLeft(100);
+
             Random rand = new Random();
             setAllColors(new Color(rand.nextInt(3), rand.nextInt(3), rand.nextInt(3)));
             execute();
@@ -65,21 +82,47 @@ public class IntelligentRobot extends AdvancedRobot {
             enemy.update(event, this);
         }
 
+        setTurnRadarRight(event.getBearing() + (getHeading() - getRadarHeading()));
+
         double firePower = Math.min(500 / enemy.getDistance(), 3);
 
         double bulletSpeed = 20 - firePower * 3;
 
-        long time = (long)(event.getDistance() / bulletSpeed);
+        long time = (long) (event.getDistance() / bulletSpeed);
 
         double futureX = enemy.getFutureX(time);
         double futureY = enemy.getFutureY(time);
+
         double absDeg = Utils.absoluteBearing(getX(), getY(), futureX, futureY);
+        double normalizedAbsDeg = Utils.normalizeBearing(absDeg - getGunHeading());
 
-        setTurnGunRight(Utils.normalizeBearing(absDeg - getGunHeading()));
+        setTurnGunRight(normalizedAbsDeg);
 
-        // Prevent premature firing
-        if (getGunHeat() == 0 && Math.abs(getGunTurnRemaining()) < 5) {
-            setFire(firePower);
+        RowData row = new RowData();
+        row.put("currentPositionX", getX());
+        row.put("currentPositionY", getY());
+        row.put("distance", event.getDistance());
+        row.put("velocity", event.getVelocity());
+        row.put("bearing", event.getBearing());
+        row.put("futureBearing", normalizedAbsDeg);
+        row.put("enemyPositionX", enemy.getX());
+        row.put("enemyPositionY", enemy.getY());
+        row.put("predictedEnemyPositionX", futureX);
+        row.put("predictedEnemyPositionY", futureY);
+        row.put("gunHeat", getGunHeat());
+
+        try {
+            if (model != null) {
+                MultinomialModelPrediction p = model.predictMultinomial(row);
+                System.out.println("Will I hit? ->" + p.label);
+                // Prevent premature firing
+
+                if (p.label.equals("hit")) {
+                    setFire(firePower);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -88,5 +131,11 @@ public class IntelligentRobot extends AdvancedRobot {
         if (e.getName().equals(enemy.getName())) {
             enemy.reset();
         }
+    }
+
+    @Override
+    public void onRoundEnded(RoundEndedEvent event) {
+        // Reset the enemy
+        enemy.reset();
     }
 }

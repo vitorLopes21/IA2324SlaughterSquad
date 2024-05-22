@@ -1,11 +1,10 @@
 package com.slaughtersquad.sampleRobots;
 
 import robocode.*;
+import com.slaughtersquad.utils.*;
 
 import java.awt.geom.*;
 import java.awt.*;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Random;
 
 public class LoggerRobot extends AdvancedRobot {
@@ -28,7 +27,7 @@ public class LoggerRobot extends AdvancedRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
 
-        Point2D.Double coordinates = utils.Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
+        Point2D.Double coordinates = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
         System.out.println("Enemy "+event.getName()+" spotted at "+coordinates.x+","+coordinates.y+"\n");
         Bullet b = fireBullet(3);
 
