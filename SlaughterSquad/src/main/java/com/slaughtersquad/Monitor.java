@@ -67,10 +67,7 @@ public class Monitor {
                     System.out.println(line);
                 }
             }
-
-            int exitCode = process.waitFor();
-            System.out.println("Process exited with code: " + exitCode);
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

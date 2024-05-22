@@ -2,6 +2,7 @@ package com.slaughtersquad.utils;
 
 import robocode.AdvancedRobot;
 import robocode.Robot;
+import static robocode.util.Utils.normalRelativeAngle;
 
 import java.awt.geom.*;
 import java.util.GregorianCalendar;
@@ -62,7 +63,7 @@ public final class Utils
         y -= robot.getY();
 
         double angleToTarget = Math.atan2(x, y);
-        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
+        double targetAngle = normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
         double turnAngle = Math.atan(Math.tan(targetAngle));
         robot.turnRight(Math.toDegrees(turnAngle));
 
@@ -85,7 +86,7 @@ public final class Utils
         y -= robot.getY();
 
         double angleToTarget = Math.atan2(x, y);
-        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
+        double targetAngle = normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
         double distance = Math.hypot(x, y);
         double turnAngle = Math.atan(Math.tan(targetAngle));
         robot.turnRight(Math.toDegrees(turnAngle));
@@ -108,7 +109,7 @@ public final class Utils
         y -= robot.getY();
 
         double angleToTarget = Math.atan2(x, y);
-        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
+        double targetAngle = normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
         double distance = Math.hypot(x, y);
         double turnAngle = Math.atan(Math.tan(targetAngle));
         robot.setTurnRight(Math.toDegrees(turnAngle));
@@ -134,5 +135,44 @@ public final class Utils
         String segundo = gc.get(GregorianCalendar.SECOND) < 10 ? "0"+gc.get(GregorianCalendar.SECOND) : ""+gc.get(GregorianCalendar.SECOND);
 
         return gc.get(GregorianCalendar.YEAR)+"-"+mes+"-"+dia+" "+hora+":"+minuto+":"+segundo;
+    }
+
+    /**
+     * Normalize the bearing to be between -180 and 180
+     * @param angle the angle to normalize
+     * @return the normalized angle
+     */
+    public static double normalizeBearing(double angle) {
+        while (angle > 180) angle -= 360;
+        while (angle < -180) angle += 360;
+        return angle;
+    }
+
+    /**
+     * Calculate the absolute bearing between two points
+     * @param x1 the x coordinate of the first point
+     * @param y1 the y coordinate of the first point
+     * @param x2 the x coordinate of the second point
+     * @param y2 the y coordinate of the second point
+     * @return the absolute bearing between the two points
+     */
+    public static double absoluteBearing(double x1, double y1, double x2, double y2) {
+        double xo = x2-x1;
+        double yo = y2-y1;
+        double hyp = Point2D.distance(x1, y1, x2, y2);
+        double arcSin = Math.toDegrees(Math.asin(xo / hyp));
+        double bearing = 0;
+
+        if (xo > 0 && yo > 0) { // both pos: lower-Left
+            bearing = arcSin;
+        } else if (xo < 0 && yo > 0) { // x neg, y pos: lower-right
+            bearing = 360 + arcSin; // arcsin is negative here, actuall 360 - ang
+        } else if (xo > 0 && yo < 0) { // x pos, y neg: upper-left
+            bearing = 180 - arcSin;
+        } else if (xo < 0 && yo < 0) { // both neg: upper-right
+            bearing = 180 - arcSin; // arcsin is negative here, actually 180 + ang
+        }
+
+        return bearing;
     }
 }
