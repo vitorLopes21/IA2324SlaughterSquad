@@ -25,3 +25,9 @@ replay_pid*
 
 # Visual Studio Code
 .vscode/
+
+# IntelliJ
+.idea/
+IA2324SlaughterSquad.iml
+
+SlaughterSquad/target/maven-status/
