@@ -1,5 +1,9 @@
 package com.slaughtersquad;
 
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -13,15 +17,28 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.FileTime;
 
 public class Monitor {
-    private static final String SIGNAL_FILE_PATH = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/battle_finished_signal.txt";
+    private static final String SIGNAL_ROUND_ENDED_FILE_PATH = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/battle_finished_signal.txt";
+    private static final String SIGNAL_BATTLE_ENDED_FILE_PATH = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/battle_finished_signal.txt";
     private static final String CLASS_PATH = "SlaughterSquad/target/classes";
     private static final String MAIN_CLASS = "com.slaughtersquad.Main";
 
-    private static FileTime lastModifiedTime = FileTime.fromMillis(0);
+    private static FileTime lastModifiedTimeRoundEnded = FileTime.fromMillis(0);
+    private static FileTime lastModifiedTimeBattleEnded = FileTime.fromMillis(0);
 
     public static void main(String[] args) {
-        Path signalFilePath = Paths.get(SIGNAL_FILE_PATH);
+        Path roundEndedFilePath = Paths.get(SIGNAL_ROUND_ENDED_FILE_PATH);
+        Path battleEndedFilePath = Paths.get(SIGNAL_BATTLE_ENDED_FILE_PATH);
 
+        Thread roundEndedThread = new Thread(
+                () -> watchFile(roundEndedFilePath, Monitor::runMainClass, lastModifiedTimeRoundEnded));
+        Thread battleEndedThread = new Thread(
+                () -> watchFile(battleEndedFilePath, Monitor::runNewBattle, lastModifiedTimeBattleEnded));
+
+        roundEndedThread.start();
+        battleEndedThread.start();
+    }
+
+    private static void watchFile(Path signalFilePath, Runnable action, FileTime lastModifiedTime) {
         try (WatchService watchService = signalFilePath.getParent().getFileSystem().newWatchService()) {
             signalFilePath.getParent().register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY);
@@ -35,8 +52,11 @@ public class Monitor {
                         if (changed.endsWith(signalFilePath.getFileName())) {
                             FileTime currentModifiedTime = Files.getLastModifiedTime(signalFilePath);
                             if (!currentModifiedTime.equals(lastModifiedTime)) {
-                                // Run the Main class
-                                runMainClass();
+                                // Run the corresponding action
+                                action.run();
+
+                                // Update the last modified time
+                                lastModifiedTime = currentModifiedTime;
 
                                 // Reset the watch key
                                 key.reset();
@@ -68,6 +88,25 @@ public class Monitor {
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void runNewBattle() {
+        try {
+            Robot robot = new Robot();
+            // Press Ctrl+N to start a new battle
+            robot.keyPress(KeyEvent.VK_CONTROL);
+            robot.keyPress(KeyEvent.VK_N);
+            robot.keyRelease(KeyEvent.VK_N);
+            robot.keyRelease(KeyEvent.VK_CONTROL);
+            // Wait for the UI to update
+            Thread.sleep(500);
+            // Click at the position where the "Start New Battle" button appears
+            robot.mouseMove(100, 100); // Adjust coordinates as needed
+            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+        } catch (AWTException | InterruptedException e) {
             e.printStackTrace();
         }
     }

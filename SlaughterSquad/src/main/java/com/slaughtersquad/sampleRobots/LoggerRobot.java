@@ -1,6 +1,7 @@
 package com.slaughtersquad.sampleRobots;
 
 import robocode.*;
+import com.slaughtersquad.utils.Utils;
 
 import java.awt.geom.*;
 import java.awt.*;
@@ -10,11 +11,10 @@ import java.util.Random;
 
 public class LoggerRobot extends AdvancedRobot {
     @Override
-    public void run()
-    {
+    public void run() {
         super.run();
 
-        while(true){
+        while (true) {
             setAhead(100);
             setTurnLeft(100);
             Random rand = new Random();
@@ -28,15 +28,14 @@ public class LoggerRobot extends AdvancedRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
 
-        Point2D.Double coordinates = utils.Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
-        System.out.println("Enemy "+event.getName()+" spotted at "+coordinates.x+","+coordinates.y+"\n");
+        Point2D.Double coordinates = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
+        System.out.println("Enemy " + event.getName() + " spotted at " + coordinates.x + "," + coordinates.y + "\n");
         Bullet b = fireBullet(3);
 
-        if (b!=null){
-            System.out.println("Firing at "+event.getName());
-        }
-        else
-            System.out.println("Cannot fire right now..."); 
+        if (b != null) {
+            System.out.println("Firing at " + event.getName());
+        } else
+            System.out.println("Cannot fire right now...");
 
     }
 
@@ -54,7 +53,6 @@ public class LoggerRobot extends AdvancedRobot {
     public void onBulletHitBullet(BulletHitBulletEvent event) {
         super.onBulletHitBullet(event);
     }
-
 
     @Override
     public void onDeath(DeathEvent event) {

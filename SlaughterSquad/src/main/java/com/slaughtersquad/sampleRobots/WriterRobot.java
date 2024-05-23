@@ -31,7 +31,8 @@ public class WriterRobot extends AdvancedRobot {
         double distance; // Distance between the enemy robot and the writer robot
         double velocity; // Velocity of the enemy robot
         double bearing; // Angle between the writer robot's heading and the direction to the enemy
-        double futureBearing; // Angle between the writer robot's heading and the direction to the future position of the enemy
+        double futureBearing; // Angle between the writer robot's heading and the direction to the future
+                              // position of the enemy
         double enemyPositionX; // X coordinate of the enemy robot
         double enemyPositionY; // Y coordinate of the enemy robot
         double predictedEnemyPositionX; // predicted X coordinate of the enemy robot
@@ -43,8 +44,7 @@ public class WriterRobot extends AdvancedRobot {
                 double velocity, double bearing, double futureBearing,
                 double enemyPositionX, double enemyPositionY,
                 double predictedEnemyPositionX, double predictedEnemyPositionY,
-                double gunHeat
-        ) {
+                double gunHeat) {
             this.currentPositionX = currentPositionX;
             this.currentPositionY = currentPositionY;
             this.distance = distance;
@@ -61,7 +61,8 @@ public class WriterRobot extends AdvancedRobot {
 
     // Method to calculate predicted position of the enemy robot
     private Point2D.Double predictEnemyPosition(ScannedRobotEvent event, double bulletPower) {
-        // Implement your prediction logic here based on the opponent's current position,
+        // Implement your prediction logic here based on the opponent's current
+        // position,
         // velocity, and other relevant factors.
         // This is just a placeholder method.
         Point2D.Double enemyPosition = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
@@ -147,7 +148,20 @@ public class WriterRobot extends AdvancedRobot {
     }
 
     /**
-     * Executa o método main da classe Main
+     * Escreve para um ficheiro para indicar que a ronda terminou
+     */
+    private void writeSignalRoundEnded() {
+        // Write a signal to a file to indicate the round has ended
+        try (RobocodeFileOutputStream signalFile = new RobocodeFileOutputStream(
+                getDataFile("round_finished_signal.txt"))) {
+            signalFile.write("".getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Escreve para um ficheiro para indicar que a batalha terminou
      */
     private void writeSignalBattleEnded() {
         // Write a signal to a file to indicate the battle has ended
@@ -190,7 +204,8 @@ public class WriterRobot extends AdvancedRobot {
         super.onScannedRobot(event);
 
         Point2D.Double enemyCoordinates = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
-        System.out.println("Enemy " + event.getName() + " spotted at " + enemyCoordinates.x + "," + enemyCoordinates.y + "\n");
+        System.out.println(
+                "Enemy " + event.getName() + " spotted at " + enemyCoordinates.x + "," + enemyCoordinates.y + "\n");
 
         double firePower = Math.min(500 / event.getDistance(), 3);
 
@@ -215,8 +230,11 @@ public class WriterRobot extends AdvancedRobot {
         if (b != null) {
             System.out.println("Firing at " + event.getName());
 
-            bulletsOnAir.put(b, new Data(this.getX(), this.getY(), Utils.getDistance(this, enemyCoordinates.x, enemyCoordinates.y), event.getVelocity(),
-                    event.getBearing(), normalizedAbsDeg, enemyCoordinates.x, enemyCoordinates.y, predictedEnemyCoordinates.x, predictedEnemyCoordinates.y, getGunHeat()));
+            bulletsOnAir.put(b,
+                    new Data(this.getX(), this.getY(), Utils.getDistance(this, enemyCoordinates.x, enemyCoordinates.y),
+                            event.getVelocity(),
+                            event.getBearing(), normalizedAbsDeg, enemyCoordinates.x, enemyCoordinates.y,
+                            predictedEnemyCoordinates.x, predictedEnemyCoordinates.y, getGunHeat()));
         } else
             System.out.println("Cannot fire right now...");
 
@@ -229,13 +247,17 @@ public class WriterRobot extends AdvancedRobot {
         try {
             if (event.getName().equals(event.getBullet().getVictim())) {
                 if (fw != null)
-                    fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";" + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                            + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";" + d.gunHeat + ";hit\n")
+                    fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
+                            + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
+                            + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
+                            + d.gunHeat + ";hit\n")
                             .getBytes());
             } else {
                 if (fw != null)
-                    fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";" + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                            + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";" + d.gunHeat + ";no_hit\n")
+                    fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
+                            + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
+                            + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
+                            + d.gunHeat + ";no_hit\n")
                             .getBytes());
             }
         } catch (IOException e) {
@@ -251,8 +273,10 @@ public class WriterRobot extends AdvancedRobot {
         Data d = bulletsOnAir.get(event.getBullet());
         try {
             if (fw != null)
-                fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";" + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                        + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";" + d.gunHeat + ";no_hit\n")
+                fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
+                        + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
+                        + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
+                        + d.gunHeat + ";no_hit\n")
                         .getBytes());
         } catch (IOException e) {
             e.printStackTrace();
@@ -266,8 +290,10 @@ public class WriterRobot extends AdvancedRobot {
         Data d = bulletsOnAir.get(event.getBullet());
         try {
             if (fw != null)
-                fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";" + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                        + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";" + d.gunHeat + ";no_hit\n")
+                fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
+                        + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
+                        + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
+                        + d.gunHeat + ";no_hit\n")
                         .getBytes());
         } catch (IOException e) {
             e.printStackTrace();
@@ -288,7 +314,8 @@ public class WriterRobot extends AdvancedRobot {
 
         writeToCsvFile();
 
-        writeSignalBattleEnded();
+        writeSignalRoundEnded();
+
     }
 
     @Override
@@ -296,6 +323,8 @@ public class WriterRobot extends AdvancedRobot {
         super.onBattleEnded(event);
 
         writeToCsvFile();
+
+        writeSignalRoundEnded();
 
         writeSignalBattleEnded();
     }
