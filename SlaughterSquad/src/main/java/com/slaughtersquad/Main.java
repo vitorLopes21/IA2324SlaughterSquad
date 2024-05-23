@@ -4,12 +4,14 @@ import java.io.*;
 import java.nio.file.Path;
 
 public class Main {
+    private static String FILE_CREATED_BY_ROBOT = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/dataset.csv";
+    private static String FILE_TO_COPY = "SlaughterSquad/src/main/java/com/slaughtersquad/datasets/dataset.csv";
+
     public static void main(String[] args) {
         try {
             System.out.println("Copying the dataset file");
             // Get the file created by the writer robot
-            String pathToDatasetFileCreatedByRobot = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/dataset.csv";
-            Path path = Path.of(pathToDatasetFileCreatedByRobot);
+            Path path = Path.of(FILE_CREATED_BY_ROBOT);
 
             File datasetFile = new File(path.toAbsolutePath().toString());
 
@@ -18,10 +20,12 @@ public class Main {
             BufferedReader br = new BufferedReader(fr);
 
             // Create a new file to store the data
-            String pathToDatasetFile = "SlaughterSquad\\src\\main\\java\\com\\slaughtersquad\\datasets\\dataset.csv";
-            Path pathToDataset = Path.of(pathToDatasetFile);
+            Path pathToDataset = Path.of(FILE_TO_COPY);
             File dataset = new File(pathToDataset.toString());
-            PrintWriter pw = new PrintWriter(dataset);
+
+            // Create a file writer to write the data to the new file
+            FileWriter fw = new FileWriter(dataset, true);
+            PrintWriter pw = new PrintWriter(fw);
 
             String line;
 

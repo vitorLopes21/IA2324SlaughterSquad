@@ -6,12 +6,14 @@ import java.awt.geom.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Random;
+
 import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
 
 import com.slaughtersquad.utils.*;
+import robocode.Robot;
 
 /**
  * This Robot uses the model provided to guess whether it will hit or miss an enemy.
@@ -19,59 +21,72 @@ import com.slaughtersquad.utils.*;
  * It is not expected to do great...
  */
 public class IntelligentRobot extends AdvancedRobot {
+    private EnemyBot enemy;
 
-
-    EasyPredictModelWrapper model;
-
+    /**
+     * Run the robot
+     */
     @Override
-    public void run()
-    {
+    public void run() {
         super.run();
 
-        System.out.println("Reading model from folder: "+getDataDirectory());
-        try{
-            //load the model
-            //TODO: be sure to change the path to the model!
-            //you will need to crate the corresponding .data folder in the package of your robot's class, and copy the model there
-            model = new EasyPredictModelWrapper(MojoModel.load("/Users/davidecarneiro/Desktop/TP_IA_2024_Resources/bin/sampleRobots/IntelligentRobot.data/drf_hit_1.zip"));
-        }
-        catch(IOException ex){
-            ex.printStackTrace();
-        }
-        
+        //load the model
+        //EasyPredictModelWrapper model = null;
+        //try {
+        //    model = new EasyPredictModelWrapper(MojoModel.load("com/slaughtersquad/sampleRobots/IntelligentRobot_model.zip"));
+        //} catch (IOException e) {
+        //    e.printStackTrace();
+        //}
 
-        while(true){
+        // Allow the gun and radar to turn independently
+        setAdjustRadarForRobotTurn(true);
+        setAdjustGunForRobotTurn(true);
+
+        enemy = new EnemyBot();
+
+        while (true) {
+            turnRadarRight(360);
             setAhead(100);
             setTurnLeft(100);
             Random rand = new Random();
             setAllColors(new Color(rand.nextInt(3), rand.nextInt(3), rand.nextInt(3)));
             execute();
         }
-
     }
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        super.onScannedRobot(event);
+        // track if we have no enemy, the one we found is significantly
+        // closer, or we scanned the one we've been tracking.
+        if (enemy.isReset() || event.getDistance() < enemy.getDistance() - 70 ||
+                event.getName().equals(enemy.getName())) {
 
-        Point2D.Double coordinates = Utils.getEnemyCoordinates(this, event.getBearing(), event.getDistance());
-        System.out.println("Enemy "+event.getName()+" spotted at "+coordinates.x+","+coordinates.y+"\n");
+            // track him using the NEW update method
+            enemy.update(event, this);
+        }
 
-        RowData row = new RowData();
-        row.put("name", event.getName());
-        row.put("distance", event.getDistance());
-        row.put("velocity", event.getVelocity());
+        double firePower = Math.min(500 / enemy.getDistance(), 3);
 
-        try {
-            BinomialModelPrediction p = model.predictBinomial(row);
-            System.out.println("Will I hit? ->" + p.label);
+        double bulletSpeed = 20 - firePower * 3;
 
-            //if the model predicts I will hit...
-            if(p.label.equals("hit"))
-                this.fire(3);
-        } catch (Exception e) {
-            e.printStackTrace();
+        long time = (long)(event.getDistance() / bulletSpeed);
+
+        double futureX = enemy.getFutureX(time);
+        double futureY = enemy.getFutureY(time);
+        double absDeg = Utils.absoluteBearing(getX(), getY(), futureX, futureY);
+
+        setTurnGunRight(Utils.normalizeBearing(absDeg - getGunHeading()));
+
+        // Prevent premature firing
+        if (getGunHeat() == 0 && Math.abs(getGunTurnRemaining()) < 5) {
+            setFire(firePower);
         }
     }
-    
+
+    @Override
+    public void onRobotDeath(RobotDeathEvent e) {
+        if (e.getName().equals(enemy.getName())) {
+            enemy.reset();
+        }
+    }
 }

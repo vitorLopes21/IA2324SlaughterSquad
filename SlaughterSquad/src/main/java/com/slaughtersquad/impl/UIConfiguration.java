@@ -1,7 +1,6 @@
 package com.slaughtersquad.impl;
 
-import com.slaughtersquad.interf.IPoint;
-import com.slaughtersquad.interf.IUIConfiguration;
+import com.slaughtersquad.interf.*;
 
 import java.awt.*;
 import java.util.List;

@@ -69,7 +69,7 @@ public class WalkerRobot extends AdvancedRobot
 
     /**
      * ******** TODO: Necessário selecionar a opção Paint na consola do Robot *******
-     * @param g
+     * @param
      */
     @Override
     public void onPaint(Graphics2D g) {
