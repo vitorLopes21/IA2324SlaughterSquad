@@ -95,15 +95,21 @@ public class Monitor {
     private static void runNewBattle() {
         try {
             Robot robot = new Robot();
+
+            // Wait for a short period
+            Thread.sleep(500);
+
             // Press Ctrl+N to start a new battle
             robot.keyPress(KeyEvent.VK_CONTROL);
             robot.keyPress(KeyEvent.VK_N);
             robot.keyRelease(KeyEvent.VK_N);
             robot.keyRelease(KeyEvent.VK_CONTROL);
-            // Wait for the UI to update
+
+            // Wait for a short period
             Thread.sleep(500);
-            // Click at the position where the "Start New Battle" button appears
-            robot.mouseMove(100, 100); // Adjust coordinates as needed
+
+            // Click again at the position where the "Start New Battle" button appears
+            robot.mouseMove(989, 838); // Adjust coordinates as needed
             robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
             robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
         } catch (AWTException | InterruptedException e) {
