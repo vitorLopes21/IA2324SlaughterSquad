@@ -26,6 +26,7 @@ import static robocode.util.Utils.normalRelativeAngleDegrees;
 public class IntelligentRobot extends AdvancedRobot {
     private EnemyBot enemy;
     private EasyPredictModelWrapper model;
+    private byte scanDirection = 2;
 
     /**
      * Run the robot
@@ -63,8 +64,7 @@ public class IntelligentRobot extends AdvancedRobot {
         enemy = new EnemyBot();
 
         while (true) {
-            turnRadarRight(360);
-
+            turnRadarRight(360 * scanDirection);
             Random rand = new Random();
             setAllColors(new Color(rand.nextInt(3), rand.nextInt(3), rand.nextInt(3)));
             execute();
@@ -82,7 +82,8 @@ public class IntelligentRobot extends AdvancedRobot {
             enemy.update(event, this);
         }
 
-        setTurnRadarRight(event.getBearing() + (getHeading() - getRadarHeading()));
+        scanDirection *= -1;
+        setTurnRadarRight(360 * scanDirection);
 
         double firePower = Math.min(500 / enemy.getDistance(), 3);
 

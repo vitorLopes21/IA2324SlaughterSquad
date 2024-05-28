@@ -8,6 +8,7 @@ com\slaughtersquad\Monitor.class
 com\slaughtersquad\viewer\PathViewer$UI.class
 com\slaughtersquad\sampleRobots\LoggerRobot.class
 com\slaughtersquad\Main.class
+com\slaughtersquad\MousePositionFinder.class
 com\slaughtersquad\utils\Utils.class
 com\slaughtersquad\impl\Point.class
 com\slaughtersquad\interf\IPoint.class
