@@ -4,9 +4,7 @@ import java.awt.AWTException;
 import java.awt.Robot;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,8 +15,9 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.FileTime;
 
 public class Monitor {
-    private static final String SIGNAL_ROUND_ENDED_FILE_PATH = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/battle_finished_signal.txt";
+    private static final String SIGNAL_ROUND_ENDED_FILE_PATH = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/round_finished_signal.txt";
     private static final String SIGNAL_BATTLE_ENDED_FILE_PATH = "SlaughterSquad/target/classes/com/slaughtersquad/sampleRobots/WriterRobot.data/battle_finished_signal.txt";
+    private static final String MOUSE_COORDS_FILE_PATH = "SlaughterSquad/libs/mouse_coords.txt";
     private static final String CLASS_PATH = "SlaughterSquad/target/classes";
     private static final String MAIN_CLASS = "com.slaughtersquad.Main";
 
@@ -55,9 +54,6 @@ public class Monitor {
                                 // Run the corresponding action
                                 action.run();
 
-                                // Update the last modified time
-                                lastModifiedTime = currentModifiedTime;
-
                                 // Reset the watch key
                                 key.reset();
                                 break;
@@ -75,18 +71,13 @@ public class Monitor {
     }
 
     private static void runMainClass() {
+        System.out.println("Running the main class");
+
         ProcessBuilder processBuilder = new ProcessBuilder("java", "-cp", CLASS_PATH, MAIN_CLASS);
         processBuilder.redirectErrorStream(true);
 
         try {
-            Process process = processBuilder.start();
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
-            }
+            processBuilder.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -94,6 +85,8 @@ public class Monitor {
 
     private static void runNewBattle() {
         try {
+            System.out.println("Starting a new battle");
+
             Robot robot = new Robot();
 
             // Wait for a short period
@@ -109,10 +102,39 @@ public class Monitor {
             Thread.sleep(500);
 
             // Click again at the position where the "Start New Battle" button appears
-            robot.mouseMove(989, 838); // Adjust coordinates as needed
+            // To do that, we're going to read the coordinates specified in the mouse_coords.txt file
+            Path mouseCoordsFilePath = Paths.get(MOUSE_COORDS_FILE_PATH);
+            File mouseCoordsFile = mouseCoordsFilePath.toFile();
+
+            // Check if the mouse coordinates file exists
+            if (!mouseCoordsFile.exists()) {
+                System.err.println("Mouse coordinates file not found!");
+                return;
+            }
+
+            // Read the mouse coordinates from the file
+            FileReader fileReader = new FileReader(mouseCoordsFile);
+            BufferedReader reader = new BufferedReader(fileReader);
+            String line = reader.readLine();
+
+            // Check if the file is empty
+            if (line == null) {
+                System.err.println("No mouse coordinates found in the file!");
+                return;
+            }
+
+            // Parse the coordinates
+            String[] coords = line.split(";");
+            int x = Integer.parseInt(coords[0]);
+            int y = Integer.parseInt(coords[1]);
+
+            robot.mouseMove(x, y);
             robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
             robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-        } catch (AWTException | InterruptedException e) {
+
+            reader.close();
+            fileReader.close();
+        } catch (AWTException | InterruptedException | IOException e) {
             e.printStackTrace();
         }
     }

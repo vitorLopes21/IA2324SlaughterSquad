@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Random;
+
 import com.slaughtersquad.utils.*;
 
 public class WriterRobot extends AdvancedRobot {
@@ -32,11 +33,12 @@ public class WriterRobot extends AdvancedRobot {
         double velocity; // Velocity of the enemy robot
         double bearing; // Angle between the writer robot's heading and the direction to the enemy
         double futureBearing; // Angle between the writer robot's heading and the direction to the future
-                              // position of the enemy
+        // position of the enemy
         double enemyPositionX; // X coordinate of the enemy robot
         double enemyPositionY; // Y coordinate of the enemy robot
         double predictedEnemyPositionX; // predicted X coordinate of the enemy robot
         double predictedEnemyPositionY; // predicted Y coordinate of the enemy robot
+        double gunTurnRemaining;
         double gunHeat; // Gun heat of the writer robot
 
         public Data(
@@ -44,7 +46,7 @@ public class WriterRobot extends AdvancedRobot {
                 double velocity, double bearing, double futureBearing,
                 double enemyPositionX, double enemyPositionY,
                 double predictedEnemyPositionX, double predictedEnemyPositionY,
-                double gunHeat) {
+                double gunTurnRemaining, double gunHeat) {
             this.currentPositionX = currentPositionX;
             this.currentPositionY = currentPositionY;
             this.distance = distance;
@@ -55,6 +57,7 @@ public class WriterRobot extends AdvancedRobot {
             this.enemyPositionY = enemyPositionY;
             this.predictedEnemyPositionX = predictedEnemyPositionX;
             this.predictedEnemyPositionY = predictedEnemyPositionY;
+            this.gunTurnRemaining = gunTurnRemaining;
             this.gunHeat = gunHeat;
         }
     }
@@ -148,6 +151,42 @@ public class WriterRobot extends AdvancedRobot {
     }
 
     /**
+     * Method that writes the data to the log_robocode.txt file
+     *
+     * @param fw File output stream
+     * @param d  Data to write to the file
+     */
+    private void writeHitsToFile(RobocodeFileOutputStream fw, Data d) {
+        try {
+            fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
+                    + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
+                    + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
+                    + d.gunTurnRemaining + ";" + d.gunHeat + ";" + "hit\n")
+                    .getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Method that writes the data to the log_robocode.txt file
+     *
+     * @param fw File output stream
+     * @param d  Data to write to the file
+     */
+    private void writeNoHitsToFile(RobocodeFileOutputStream fw, Data d) {
+        try {
+            fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
+                    + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
+                    + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
+                    + d.gunTurnRemaining + ";" + d.gunHeat + ";" + "no_hit\n")
+                    .getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Escreve para um ficheiro para indicar que a ronda terminou
      */
     private void writeSignalRoundEnded() {
@@ -234,7 +273,7 @@ public class WriterRobot extends AdvancedRobot {
                     new Data(this.getX(), this.getY(), Utils.getDistance(this, enemyCoordinates.x, enemyCoordinates.y),
                             event.getVelocity(),
                             event.getBearing(), normalizedAbsDeg, enemyCoordinates.x, enemyCoordinates.y,
-                            predictedEnemyCoordinates.x, predictedEnemyCoordinates.y, getGunHeat()));
+                            predictedEnemyCoordinates.x, predictedEnemyCoordinates.y, getGunTurnRemaining(), getGunHeat()));
         } else
             System.out.println("Cannot fire right now...");
 
@@ -244,24 +283,14 @@ public class WriterRobot extends AdvancedRobot {
     public void onBulletHit(BulletHitEvent event) {
         super.onBulletHit(event);
         Data d = bulletsOnAir.get(event.getBullet());
-        try {
-            if (event.getName().equals(event.getBullet().getVictim())) {
-                if (fw != null)
-                    fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
-                            + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                            + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
-                            + d.gunHeat + ";hit\n")
-                            .getBytes());
-            } else {
-                if (fw != null)
-                    fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
-                            + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                            + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
-                            + d.gunHeat + ";no_hit\n")
-                            .getBytes());
+        if (event.getName().equals(event.getBullet().getVictim())) {
+            if (fw != null) {
+                writeHitsToFile(fw, d);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            if (fw != null) {
+                writeNoHitsToFile(fw, d);
+            }
         }
 
         bulletsOnAir.remove(event.getBullet());
@@ -271,16 +300,11 @@ public class WriterRobot extends AdvancedRobot {
     public void onBulletMissed(BulletMissedEvent event) {
         super.onBulletMissed(event);
         Data d = bulletsOnAir.get(event.getBullet());
-        try {
-            if (fw != null)
-                fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
-                        + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                        + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
-                        + d.gunHeat + ";no_hit\n")
-                        .getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        if (fw != null) {
+            writeNoHitsToFile(fw, d);
         }
+
         bulletsOnAir.remove(event.getBullet());
     }
 
@@ -288,16 +312,11 @@ public class WriterRobot extends AdvancedRobot {
     public void onBulletHitBullet(BulletHitBulletEvent event) {
         super.onBulletHitBullet(event);
         Data d = bulletsOnAir.get(event.getBullet());
-        try {
-            if (fw != null)
-                fw.write((d.currentPositionX + ";" + d.currentPositionY + ";" + d.distance + ";" + d.velocity + ";"
-                        + d.bearing + ";" + d.futureBearing + ";" + d.enemyPositionX + ";"
-                        + d.enemyPositionY + ";" + d.predictedEnemyPositionX + ";" + d.predictedEnemyPositionY + ";"
-                        + d.gunHeat + ";no_hit\n")
-                        .getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        if (fw != null) {
+            writeNoHitsToFile(fw, d);
         }
+
         bulletsOnAir.remove(event.getBullet());
     }
 
