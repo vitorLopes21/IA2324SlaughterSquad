@@ -120,6 +120,8 @@ public class Monitor {
             // Check if the file is empty
             if (line == null) {
                 System.err.println("No mouse coordinates found in the file!");
+
+                reader.close();
                 return;
             }
 
