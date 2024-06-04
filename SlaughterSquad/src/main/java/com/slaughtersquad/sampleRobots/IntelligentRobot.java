@@ -34,21 +34,22 @@ public class IntelligentRobot extends AdvancedRobot {
     @Override
     public void run() {
         super.run();
+
         File dir = getDataDirectory(); // Use Robocode's method to get the data directory
         File[] files = dir.listFiles(); // List all files in the directory
 
-        File dataFile = null;
+        File modelFile = null;
         assert files != null;
         for (File file : files) {
-            if (file.getName().startsWith("DRF_model_python") && file.getName().endsWith(".zip")) {
-                dataFile = file; // Found a matching file
+            if (file.getName().endsWith(".zip")) {
+                modelFile = file; // Found a matching file
                 break;
             }
         }
 
-        if (dataFile != null) {
+        if (modelFile != null) {
             try {
-                model = new EasyPredictModelWrapper(MojoModel.load(dataFile.getAbsolutePath()));
+                model = new EasyPredictModelWrapper(MojoModel.load(modelFile.getAbsolutePath()));
                 System.out.println("Model loaded successfully");
             } catch (IOException e) {
                 e.printStackTrace();
@@ -75,14 +76,17 @@ public class IntelligentRobot extends AdvancedRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
         // track if we have no enemy, the one we found is significantly
         // closer, or we scanned the one we've been tracking.
-        if (enemy.isReset() || event.getDistance() < enemy.getDistance() - 70 ||
+        if (enemy.isReset() || event.getDistance() < enemy.getDistance() ||
                 event.getName().equals(enemy.getName())) {
 
             // track him using the NEW update method
             enemy.update(event, this);
         }
 
-        scanDirection *= -1;
+        if (enemy.getDistance() < 150) {
+            scanDirection *= -1;
+        }
+
         setTurnRadarRight(360 * scanDirection);
 
         double firePower = Math.min(500 / enemy.getDistance(), 3);
@@ -116,7 +120,6 @@ public class IntelligentRobot extends AdvancedRobot {
             if (model != null) {
                 MultinomialModelPrediction p = model.predictMultinomial(row);
                 System.out.println("Will I hit? ->" + p.label);
-                // Prevent premature firing
 
                 if (p.label.equals("hit")) {
                     setFire(firePower);
