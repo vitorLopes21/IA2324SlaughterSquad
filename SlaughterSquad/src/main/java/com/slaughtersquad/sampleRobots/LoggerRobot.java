@@ -1,12 +1,10 @@
 package com.slaughtersquad.sampleRobots;
 
 import robocode.*;
-import com.slaughtersquad.utils.Utils;
+import com.slaughtersquad.utils.*;
 
 import java.awt.geom.*;
 import java.awt.*;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Random;
 
 public class LoggerRobot extends AdvancedRobot {
