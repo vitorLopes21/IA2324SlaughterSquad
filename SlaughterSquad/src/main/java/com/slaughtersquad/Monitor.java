@@ -102,7 +102,8 @@ public class Monitor {
             Thread.sleep(500);
 
             // Click again at the position where the "Start New Battle" button appears
-            // To do that, we're going to read the coordinates specified in the mouse_coords.txt file
+            // To do that, we're going to read the coordinates specified in the
+            // mouse_coords.txt file
             Path mouseCoordsFilePath = Paths.get(MOUSE_COORDS_FILE_PATH);
             File mouseCoordsFile = mouseCoordsFilePath.toFile();
 
