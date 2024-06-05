@@ -41,7 +41,8 @@ public class SlaughterSquad extends AdvancedRobot {
     private int[][] riskGrid;
 
     private EnemyBot enemy;
-    private EasyPredictModelWrapper model;
+    private EasyPredictModelWrapper predictShootModel;
+    private EasyPredictModelWrapper predictPositionRiskModel;
     private HashMap<String, Point2D.Double> enemies;
     private byte scanDirection = 2;
 
@@ -643,18 +644,23 @@ public class SlaughterSquad extends AdvancedRobot {
         File dir = getDataDirectory(); // Use Robocode's method to get the data directory
         File[] files = dir.listFiles(); // List all files in the directory
 
-        File modelFile = null;
+        File[] modelFile = null;
         assert files != null;
         for (File file : files) {
-            if (file.getName().endsWith(".zip")) {
-                modelFile = file; // Found a matching file
+            if (file.getName().equals("drf_predictRiskPosition.zip")) {
+                modelFile[0] = file; // Found a matching file
+                break;
+            } else if (file.getName().equals("drf_predictShoot.zip")) {
+                modelFile[1] = file; // Found a matching file
                 break;
             }
         }
 
         if (modelFile != null) {
             try {
-                this.model = new EasyPredictModelWrapper(MojoModel.load(modelFile.getAbsolutePath()));
+                this.predictPositionRiskModel = new EasyPredictModelWrapper(
+                        MojoModel.load(modelFile[0].getAbsolutePath()));
+                this.predictShootModel = new EasyPredictModelWrapper(MojoModel.load(modelFile[1].getAbsolutePath()));
                 System.out.println("Model loaded successfully");
             } catch (IOException e) {
                 e.printStackTrace();
@@ -693,15 +699,13 @@ public class SlaughterSquad extends AdvancedRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
         // track if we have no enemy, the one we found is significantly
         // closer, or we scanned the one we've been tracking.
+        enemies.put(event.getName(), new Point2D.Double(Utils.getEnemyCoordinates(this, event)));
+
         if (enemy.isReset() || event.getDistance() < enemy.getDistance() ||
                 event.getName().equals(enemy.getName())) {
 
             // track him using the NEW update method
             enemy.update(event, this);
-
-            if (!enemies.containsKey(event.getName())) {
-                enemies.put(event.getName(), new Point2D.Double(Utils.getEnemyCoordinates(this, event)));
-            }
         }
 
         if (enemy.getDistance() < 300) {
@@ -718,18 +722,61 @@ public class SlaughterSquad extends AdvancedRobot {
 
         long time = (long) (event.getDistance() / bulletSpeed);
 
-        double futureX = enemy.getFutureX(time);
-        double futureY = enemy.getFutureY(time);
+        double myFutureX = getX() + Math.sin(getHeadingRadians()) * getVelocity() * time;
+        double myFutureY = getY() + Math.cos(getHeadingRadians()) * getVelocity() * time;
+        double enemyFutureX = enemy.getFutureX(time);
+        double enemyFutureY = enemy.getFutureY(time);
 
-        double absDeg = Utils.absoluteBearing(getX(), getY(), futureX, futureY);
+        double absDeg = Utils.absoluteBearing(getX(), getY(), enemyFutureX, enemyFutureY);
         double normalizedAbsDeg = Utils.normalizeBearing(absDeg - getGunHeading());
+
+        int riskScore = riskGrid[(int) (myFutureX / CELL_SIZE)][(int) (myFutureY / CELL_SIZE)];
+
+        Point2D.Double enemyPredictedPosition = predictEnemyPosition(event, firePower);
+
+        Point2D.Double enemyPredictedBearing = predictEnemyBearing(event, firePower, enemies.get(event.getName()));
+
+        Point2D.Double destinationCell = getDestinationCell(event);
 
         // Assign risk based on enemy bearing, based on his future position and bearing,
         // if it intercepts with my future position then it's risky
-        assignRiskBasedOnFutureEnemyShot(event, futureX, futureY, this.predictEnemyPosition(event, firePower),
-                this.predictEnemyBearing(event, firePower, enemies.get(event.getName())));
+        assignRiskBasedOnFutureEnemyShot(event, enemyFutureX, enemyFutureY, enemyPredictedPosition,
+                enemyPredictedBearing);
 
-        // Pick a random spot on the battlefield to move towards
+        RowData rowPredictRiskyCoordinates = new RowData();
+        rowPredictRiskyCoordinates.put("col1", myFutureX);
+        rowPredictRiskyCoordinates.put("col2", myFutureY);
+        rowPredictRiskyCoordinates.put("col3", this.getVelocity());
+        rowPredictRiskyCoordinates.put("col4", this.getHeading());
+        rowPredictRiskyCoordinates.put("col5", enemyFutureX);
+        rowPredictRiskyCoordinates.put("col6", enemyFutureY);
+        rowPredictRiskyCoordinates.put("col7", event.getDistance());
+        rowPredictRiskyCoordinates.put("col8", enemyPredictedBearing);
+        rowPredictRiskyCoordinates.put("col9", destinationCell.x);
+        rowPredictRiskyCoordinates.put("col10", destinationCell.y);
+        rowPredictRiskyCoordinates.put("col11", riskScore);
+
+        boolean isRisky = true;
+
+        // While the algorithm hasn't predicted a safe position, keep predicting
+        while (isRisky) {
+            try {
+                if (predictPositionRiskModel != null) {
+                    BinomialModelPrediction p = predictPositionRiskModel.predictBinomial(rowPredictRiskyCoordinates);
+                    System.out.println("Is it risky? ->" + p.label);
+
+                    if (p.label.equals("notRisky")) {
+                        isRisky = false;
+                    } else {
+                        // If the position is still risky, update the risk grid and try again
+                        this.updateRiskGrid();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         Point2D.Double start = new Point2D.Double(getX(), getY());
         Point2D.Double end = getDestinationCell(event);
         Population population = new Population(start, end, start.distance(end), enemies);
@@ -738,11 +785,6 @@ public class SlaughterSquad extends AdvancedRobot {
 
         followPath(bestPath, start.distance(end));
 
-        setTurnGunRight(normalizedAbsDeg);
-
-        RowData rowPredictRiskyCoordinates = new RowData();
-        rowPredictRiskyCoordinates.put("currentPositionX", getX());
-
         RowData row = new RowData();
         row.put("currentPositionX", getX());
         row.put("currentPositionY", getY());
@@ -750,12 +792,14 @@ public class SlaughterSquad extends AdvancedRobot {
         row.put("velocity", event.getVelocity());
         row.put("bearing", event.getBearing());
         row.put("futureBearing", normalizedAbsDeg);
-        row.put("predictedEnemyPositionX", futureX);
-        row.put("predictedEnemyPositionY", futureY);
+        row.put("predictedEnemyPositionX", enemyFutureX);
+        row.put("predictedEnemyPositionY", enemyFutureY);
+
+        setTurnGunRight(normalizedAbsDeg);
 
         try {
-            if (model != null) {
-                BinomialModelPrediction p = model.predictBinomial(row);
+            if (predictShootModel != null) {
+                BinomialModelPrediction p = predictShootModel.predictBinomial(row);
                 System.out.println("Will I hit? ->" + p.label);
 
                 if (p.label.equals("hit")) {
