@@ -99,7 +99,7 @@ public class Monitor {
             robot.keyRelease(KeyEvent.VK_CONTROL);
 
             // Wait for a short period
-            Thread.sleep(500);
+            Thread.sleep(1000);
 
             // Click again at the position where the "Start New Battle" button appears
             // To do that, we're going to read the coordinates specified in the

@@ -62,6 +62,7 @@ public class WriterRobot extends AdvancedRobot {
         double destinationCellX; // X coordinate of the cell the writer robot is heading to
         double destinationCellY;
         int risk; // Risk score of the cell
+        String isRisky; // Indicates if the cell is risky or not
 
         /**
          * Constructor for the Data class
@@ -472,12 +473,17 @@ public class WriterRobot extends AdvancedRobot {
         // if it intercepts with my future position then it's risky
         assignRiskBasedOnFutureEnemyShot(event, futureX, futureY, predictedEnemyCoordinates, predictedEnemyBearing);
 
-        // Calculate the destination cell and get the risk score
+        // Calculate the destination cell
         Point2D.Double destinationCell = getDestinationCell(event);
-        int riskScore = riskGrid[(int) (destinationCell.x / CELL_SIZE)][(int) (destinationCell.y / CELL_SIZE)];
+
+        // Calculate risk based on my future position cell
+        int riskScore = riskGrid[(int) (futureX / CELL_SIZE)][(int) (futureY / CELL_SIZE)];
+
+        // Checks for danger
+        boolean isHit;
 
         // Save into list
-        if (riskScore >= 8) {
+        if (riskScore > 5) {
             data.add(new Data(
                     this.getX(), this.getY(), futureX, futureY, this.getVelocity(), this.getHeading(),
                     enemyCoordinates.x, enemyCoordinates.y, predictedEnemyCoordinates.x, predictedEnemyCoordinates.y,
@@ -485,6 +491,7 @@ public class WriterRobot extends AdvancedRobot {
                     destinationCell.x,
                     destinationCell.y, riskScore,
                     "risky"));
+            isHit = true;
         } else {
             data.add(new Data(
                     this.getX(), this.getY(), futureX, futureY, this.getVelocity(), this.getHeading(),
@@ -493,7 +500,16 @@ public class WriterRobot extends AdvancedRobot {
                     destinationCell.x,
                     destinationCell.y, riskScore,
                     "notRisky"));
+            isHit = false;
         }
+
+        // Write the data to the file
+        Data d = data.get(data.size() - 1);
+
+        if (fw != null) {
+            writeColumnsToFile(d, riskGrid, isHit);
+        }
+
     }
 
     /**
@@ -502,6 +518,8 @@ public class WriterRobot extends AdvancedRobot {
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
         super.onHitByBullet(event);
+
+        boolean isHit = true;
 
         // System.out.println("Hit by bullet! " + event.getBullet().getName() + " at " +
         // event.getBullet().getX() + ","
@@ -558,7 +576,7 @@ public class WriterRobot extends AdvancedRobot {
 
         if (event.getName().equals(this.getName())) {
             if (fw != null) {
-                writeColumnsToFile(d, riskGrid);
+                writeColumnsToFile(d, riskGrid, isHit);
             }
         }
 
@@ -581,6 +599,8 @@ public class WriterRobot extends AdvancedRobot {
     @Override
     public void onHitRobot(HitRobotEvent event) {
         super.onHitRobot(event);
+
+        boolean isHit = true;
 
         // System.out.println("Hit the robot! " + event.getName() + " at " +
         // event.getEnergy() + "\n");
@@ -635,11 +655,9 @@ public class WriterRobot extends AdvancedRobot {
         // Save the data to the file
         Data d = data.get(data.size() - 1);
 
-        writeColumnsToFile(d, riskGrid);
-
         if (event.getName().equals(this.getName())) {
             if (fw != null) {
-                writeColumnsToFile(d, riskGrid);
+                writeColumnsToFile(d, riskGrid, isHit);
             }
         }
 
@@ -689,19 +707,19 @@ public class WriterRobot extends AdvancedRobot {
      * 
      * @param riskGrid
      */
-    private void writeColumnsToFile(Data d, int[][] riskGrid) {
+    private void writeColumnsToFile(Data d, int[][] riskGrid, boolean isHit) {
 
         try {
             // Write the data to the file
-            if (d.risk > 5) {
+            if (isHit) {
                 fw.write((d.myPositionX + ";" + d.myPositionY + ";" + d.myFuturePositionX + ";" + d.myFuturePositionY
                         + ";"
                         + d.myVelocity + ";" + d.myHeading + ";" + d.enemyPositionX + ";" + d.enemyPositionY + ";"
                         + d.enemyPredictedPositionX + ";" + d.enemyPredictedPositionY + ";" + d.enemyDistance + ";"
                         + d.enemyBearing + ";" + d.enemyPredictedBearing + ";" + d.time + ";" + d.destinationCellX + ";"
-                        + d.destinationCellY + ";" + d.risk + ";" + "risky;")
+                        + d.destinationCellY + ";" + d.risk + ";" + "risky")
                         .getBytes());
-            } else {
+            } else if (!isHit) {
                 fw.write((d.myPositionX + ";" + d.myPositionY + ";" + d.myFuturePositionX + ";" + d.myFuturePositionY
                         + ";"
                         + d.myVelocity + ";" + d.myHeading + ";" + d.enemyPositionX + ";" + d.enemyPositionY + ";"
@@ -709,13 +727,6 @@ public class WriterRobot extends AdvancedRobot {
                         + d.enemyBearing + ";" + d.enemyPredictedBearing + ";" + d.time + ";" + d.destinationCellX + ";"
                         + d.destinationCellY + ";" + d.risk + ";" + "notRisky")
                         .getBytes());
-            }
-
-            // Write the risk grid to the file
-            for (int i = 0; i < gridWidth; i++) {
-                for (int j = 0; j < gridHeight; j++) {
-                    fw.write((";" + riskGrid[i][j]).getBytes());
-                }
             }
             fw.write("\n".getBytes());
 
