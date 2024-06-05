@@ -17,6 +17,9 @@ com\slaughtersquad\viewer\PathViewer$UI$1.class
 com\slaughtersquad\interf\IPath.class
 com\slaughtersquad\interf\IUIConfiguration.class
 com\slaughtersquad\sampleRobots\WriterRobot.class
+com\slaughtersquad\sampleRobots\SlaughterSquad$Population.class
+com\slaughtersquad\sampleRobots\SlaughterSquad$Solution.class
+com\slaughtersquad\sampleRobots\SlaughterSquad.class
 com\slaughtersquad\sampleRobots\WalkerRobot.class
 com\slaughtersquad\sampleRobots\WriterRobot$Data.class
 com\slaughtersquad\impl\UIConfiguration.class
