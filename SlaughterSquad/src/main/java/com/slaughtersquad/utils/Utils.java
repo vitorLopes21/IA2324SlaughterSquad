@@ -2,6 +2,8 @@ package com.slaughtersquad.utils;
 
 import robocode.AdvancedRobot;
 import robocode.Robot;
+import robocode.ScannedRobotEvent;
+
 import static robocode.util.Utils.normalRelativeAngle;
 
 import java.awt.geom.*;
@@ -36,17 +38,37 @@ public final class Utils
     }
 
     /**
+     * Returns the distance between two points
+     * @param firstX the x coordinate of the first point
+     * @param firstY the y coordinate of the first point
+     * @param secondX the x coordinate of the second point
+     * @param secondY the y coordinate of the second point
+     * @return the distance between the two points
+     */
+    public static double getDistance(double firstX, double firstY, double secondX, double secondY)
+    {
+        secondX -= firstX;
+        secondY -= firstY;
+
+        return Math.hypot(secondX, secondY);
+    }
+
+    /**
      * Devolve as coordenadas de um alvo
      *
      * @param robot o meu robot
-     * @param bearing ângulo para o alvo, em graus
-     * @param distance distância ao alvo
+     * @param event evento de um robot inimigo
      * @return coordenadas do alvo
      * */
-    public static Point2D.Double getEnemyCoordinates(Robot robot, double bearing, double distance){
-        double angle = Math.toRadians((robot.getHeading() + bearing) % 360);
+    public static Point2D.Double getEnemyCoordinates(Robot robot, ScannedRobotEvent event){
+        double absBearing = (robot.getHeading() + event.getBearing());
 
-        return new Point2D.Double((robot.getX() + Math.sin(angle) * distance), (robot.getY() + Math.cos(angle) * distance));
+        if (absBearing < 0) absBearing += 360;
+
+        double x = robot.getX() + Math.sin(Math.toRadians(absBearing)) * event.getDistance();
+        double y = robot.getY() + Math.cos(Math.toRadians(absBearing)) * event.getDistance();
+
+        return new Point2D.Double(x, y);
     }
 
     /**
